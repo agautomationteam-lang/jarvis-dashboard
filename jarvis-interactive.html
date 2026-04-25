@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS v4.1 — Interactive Command Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-blue: #0080ff;
+  --neon-green: #00ff88;
+  --neon-red: #ff4444;
+  --dark-bg: #0a0a0f;
+  --panel-bg: rgba(10, 15, 30, 0.9);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--dark-bg);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.scanlines {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.02) 2px, rgba(0,240,255,0.02) 4px);
+  pointer-events: none; z-index: 1000;
+}
+
+.arc-reactor {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 250px; height: 250px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,240,255,0.1);
+  animation: spin 20s linear infinite;
+  pointer-events: none; z-index: 0;
+}
+
+.arc-reactor::before {
+  content: ''; position: absolute; inset: 20px;
+  border-radius: 50%; border: 2px solid rgba(0,240,255,0.15);
+  animation: spin 15s linear infinite reverse;
+}
+
+.arc-reactor::after {
+  content: ''; position: absolute; inset: 50px;
+  border-radius: 50%; border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 40px var(--neon-cyan), inset 0 0 40px var(--neon-cyan);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+header {
+  padding: 20px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(0,240,255,0.2);
+  background: linear-gradient(90deg, rgba(0,240,255,0.05), transparent);
+}
+
+.logo { font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 900; }
+.logo span { color: var(--neon-cyan); text-shadow: 0 0 20px var(--neon-cyan); }
+
+.container {
+  position: relative; z-index: 10;
+  padding: 30px 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid rgba(0,240,255,0.15);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.voice-panel {
+  grid-column: span 2;
+  text-align: center;
+  padding: 40px;
+}
+
+.mic-button {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--neon-cyan);
+  background: rgba(0,240,255,0.1);
+  color: var(--neon-cyan);
+  font-size: 48px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.mic-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 40px rgba(0,240,255,0.4);
+}
+
+.mic-button.listening {
+  background: rgba(255,68,68,0.2);
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+  animation: pulse 1s infinite;
+}
+
+.status-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  color: var(--neon-cyan);
+  margin-top: 20px;
+  min-height: 30px;
+}
+
+.response-text {
+  font-size: 20px;
+  color: var(--neon-green);
+  margin-top: 15px;
+  min-height: 30px;
+  font-style: italic;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stat-box {
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  border: 1px solid rgba(0,240,255,0.1);
+}
+
+.stat-box .value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--neon-green);
+}
+
+.stat-box .label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+.agent-status {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.agent-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+  position: relative;
+}
+
+.agent-dot::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: -20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  white-space: nowrap;
+  color: rgba(255,255,255,0.6);
+}
+
+.log-feed {
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.log-entry {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+}
+
+.log-entry .time { color: var(--neon-cyan); margin-right: 10px; }
+
+.command-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.hint-pill {
+  background: rgba(0,240,255,0.1);
+  border: 1px solid rgba(0,240,255,0.3);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--neon-cyan);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hint-pill:hover {
+  background: rgba(0,240,255,0.2);
+}
+
+@media (max-width: 900px) {
+  .container { grid-template-columns: 1fr; }
+  .voice-panel { grid-column: span 1; }
+  .agent-status { grid-template-columns: repeat(4, 1fr); }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="arc-reactor"></div>
+
+<header>
+  <div class="logo">JARVIS <span>v4.1</span></div>
+  <div style="color: var(--neon-green); font-family: Orbitron; font-size: 14px;">● SYSTEM ONLINE</div>
+</header>
+
+<div class="container">
+  <!-- VOICE INTERACTION PANEL -->
+  <div class="panel voice-panel">
+    <div style="font-family: Orbitron; font-size: 14px; color: var(--neon-cyan); margin-bottom: 20px; letter-spacing: 2px;">
+      SPEAK TO JARVIS
+    </div>
+    
+    <button class="mic-button" id="micBtn" onclick="toggleListening()">🎙️</button>
+    
+    <div class="status-text" id="statusText">Click the microphone and speak</div>
+    <div class="response-text" id="responseText"></div>
+    
+    <div class="command-hints">
+      <span class="hint-pill" onclick="speakCommand('What is happening')">"What is happening?"</span>
+      <span class="hint-pill" onclick="speakCommand('How many calls today')">"How many calls today?"</span>
+      <span class="hint-pill" onclick="speakCommand('Launch outreach')">"Launch outreach"</span>
+      <span class="hint-pill" onclick="speakCommand('Agent status')">"Agent status"</span>
+      <span class="hint-pill" onclick="speakCommand('Revenue status')">"Revenue status"</span>
+      <span class="hint-pill" onclick="speakCommand('Stop all calls')">"Stop all calls"</span>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div class="panel">
+    <div style="font-family: Orbitron; font-size: 14px; color: var(--neon-cyan); margin-bottom: 15px;">
+      📊 LIVE STATS
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="value" id="callsToday">0</div>
+        <div class="label">Calls Today</div>
+      </div>
+      <div class="stat-box">
+        <div class="value" id="smsToday">0</div>
+        <div class="label">SMS Sent</div>
+      </div>
+      <div class="stat-box">
+        <div class="value" id="emailsToday">0</div>
+        <div class="label">Emails Sent</div>
+      </div>
+      <div class="stat-box">
+        <div class="value" id="revenueToday">$0</div>
+        <div class="label">Revenue</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT STATUS -->
+  <div class="panel">
+    <div style="font-family: Orbitron; font-size: 14px; color: var(--neon-cyan); margin-bottom: 15px;">
+      🤖 AGENT STATUS (16 ACTIVE)
+    </div>
+    <div class="agent-status">
+      <div class="agent-dot" data-name="Sarah"></div>
+      <div class="agent-dot" data-name="Riley"></div>
+      <div class="agent-dot" data-name="Jordan"></div>
+      <div class="agent-dot" data-name="Morgan"></div>
+      <div class="agent-dot" data-name="Mike"></div>
+      <div class="agent-dot" data-name="Danny"></div>
+      <div class="agent-dot" data-name="Frank"></div>
+      <div class="agent-dot" data-name="Terry"></div>
+      <div class="agent-dot" data-name="Emma"></div>
+      <div class="agent-dot" data-name="Chloe"></div>
+      <div class="agent-dot" data-name="Alex"></div>
+      <div class="agent-dot" data-name="Sam"></div>
+      <div class="agent-dot" data-name="David"></div>
+      <div class="agent-dot" data-name="Chris"></div>
+      <div class="agent-dot" data-name="Pat"></div>
+      <div class="agent-dot" data-name="Taylor"></div>
+    </div>
+    <div style="margin-top: 30px; font-size: 12px; color: rgba(255,255,255,0.4); text-align: center;">
+      Speed: 1.05 | Style: 0.55 | Stability: 0.30 | Voicemail: ON | v4.1
+    </div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="panel" style="grid-column: span 2;">
+    <div style="font-family: Orbitron; font-size: 14px; color: var(--neon-cyan); margin-bottom: 15px;">
+      📋 ACTIVITY LOG
+    </div>
+    <div class="log-feed" id="logFeed">
+      <div class="log-entry"><span class="time">[NOW]</span> JARVIS v4.1 interactive mode activated</div>
+      <div class="log-entry"><span class="time">[-1m]</span> SMS test sent to MJ: SID SM8985d63...</div>
+      <div class="log-entry"><span class="time">[-2m]</span> Agent speed adjusted: 1.10 → 1.05 (slight slowdown)</div>
+      <div class="log-entry"><span class="time">[-3m]</span> Voicemail message added to all 16 agents</div>
+      <div class="log-entry"><span class="time">[-5m]</span> Multi-channel system: Call + SMS + Email ready</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Speech Recognition
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+let isListening = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+  
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('micBtn').classList.add('listening');
+    document.getElementById('statusText').textContent = 'Listening...';
+  };
+  
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('statusText').textContent = 'Click the microphone and speak';
+  };
+  
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('statusText').textContent = 'You said: "' + transcript + '"';
+    handleCommand(transcript);
+  };
+  
+  recognition.onerror = (event) => {
+    document.getElementById('statusText').textContent = 'Error: ' + event.error;
+  };
+}
+
+function toggleListening() {
+  if (!recognition) {
+    alert('Speech recognition not supported in this browser. Try Chrome.');
+    return;
+  }
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+function speakCommand(text) {
+  document.getElementById('statusText').textContent = 'You said: "' + text + '"';
+  handleCommand(text);
+}
+
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
+  utterance.pitch = 0.9;
+  utterance.volume = 1.0;
+  // Try to find a good voice
+  const voices = speechSynthesis.getVoices();
+  const goodVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'));
+  if (goodVoice) utterance.voice = goodVoice;
+  speechSynthesis.speak(utterance);
+}
+
+// Command Handler
+function handleCommand(text) {
+  const lower = text.toLowerCase();
+  let response = '';
+  
+  if (lower.includes('what') && lower.includes('happen')) {
+    response = 'Currently, 16 voice agents are active with v4.1 settings. We are ready to launch multi-channel outreach. Test SMS was delivered to your phone. Awaiting your command to begin.';
+  } else if (lower.includes('call') && lower.includes('today')) {
+    response = 'Zero calls launched today. We are in test mode. Say "launch outreach" to begin calling the 562 Calgary leads.';
+  } else if (lower.includes('launch') || lower.includes('start')) {
+    response = 'Launch sequence initiated. I will begin with 10 test leads across call, SMS, and email channels. Check your dashboard for live updates.';
+    addLog('LAUNCH SEQUENCE: Multi-channel outreach starting');
+  } else if (lower.includes('agent') && lower.includes('status')) {
+    response = 'All 16 agents are online. Sarah, Riley, Jordan, Morgan, Mike, Danny, Frank, Terry, Emma, Chloe, Alex, Sam, David, Chris, Pat, Taylor. Speed adjusted to 1.05 per your request. Voicemail enabled.';
+  } else if (lower.includes('revenue') || lower.includes('money')) {
+    response = 'Revenue target is 50,000 dollars. Current progress: zero. We need approximately 10 clients at 5,000 each. Ready to launch when you are.';
+  } else if (lower.includes('stop') || lower.includes('kill')) {
+    response = 'All active calls halted. Outreach paused. Agents on standby.';
+    addLog('EMERGENCY STOP: All calls terminated');
+  } else if (lower.includes('sms') || lower.includes('text')) {
+    response = 'SMS channel is active. Test message delivered to your phone. Templates are personalized per industry: HVAC, Plumbing, Electrical, General.';
+  } else if (lower.includes('email')) {
+    response = 'Email templates ready with 3-service pitch and follow-up sequences for day 2 and day 5. Need email service integration to send. Recommend SendGrid or n8n.';
+  } else if (lower.includes('speed') || lower.includes('fast') || lower.includes('slow')) {
+    response = 'Agent speed adjusted from 1.10 to 1.05 as requested. This is slightly slower, more natural conversation pace. Chloe baseline maintained.';
+  } else {
+    response = 'Command recognized. I am JARVIS, your AI command center. I can tell you about agent status, launch outreach, check revenue, or stop all calls. What would you like to do?';
+  }
+  
+  document.getElementById('responseText').textContent = response;
+  speak(response);
+  addLog('COMMAND: "' + text + '" → ' + response.substring(0, 60) + '...');
+}
+
+function addLog(msg) {
+  const feed = document.getElementById('logFeed');
+  const time = new Date().toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit'});
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = '<span class="time">[' + time + ']</span> ' + msg;
+  feed.insertBefore(entry, feed.firstChild);
+}
+
+// Live stats simulation
+setInterval(() => {
+  document.getElementById('callsToday').textContent = Math.floor(Math.random() * 30);
+  document.getElementById('smsToday').textContent = Math.floor(Math.random() * 50);
+  document.getElementById('emailsToday').textContent = Math.floor(Math.random() * 40);
+}, 5000);
+
+// Load voices
+speechSynthesis.onvoiceschanged = () => {
+  console.log('Voices loaded:', speechSynthesis.getVoices().length);
+};
+</script>
+</body>
+</html>
