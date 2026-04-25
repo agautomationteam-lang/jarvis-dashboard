@@ -3,593 +3,1021 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>J.A.R.V.I.S. — AI Command Center</title>
+<title>J.A.R.V.I.S. — AI Command Center v3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:#050508;color:#e2e8f0;font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh}
+body{background:#020205;color:#e2e8f0;font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh;position:relative}
 ::selection{background:rgba(0,240,255,0.3);color:#fff}
 
-/* Animated grid background */
-.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+/* Animated starfield background */
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at bottom,#1b2735 0%,#090a0f 100%)}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle 3s infinite}
+@keyframes twinkle{0%,100%{opacity:0.2}50%{opacity:1}}
 
 /* Scanlines */
-.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);opacity:0.3}
+.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);opacity:0.25}
 
-/* Orbs */
-.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
-.orb-1{width:500px;height:500px;background:radial-gradient(circle,rgba(0,240,255,0.15),transparent 70%);top:-10%;left:-5%;animation:float 8s ease-in-out infinite alternate}
-.orb-2{width:600px;height:600px;background:radial-gradient(circle,rgba(168,85,247,0.12),transparent 70%);top:30%;right:-10%;animation:float 10s ease-in-out infinite alternate-reverse}
-.orb-3{width:300px;height:300px;background:radial-gradient(circle,rgba(255,45,149,0.1),transparent 70%);bottom:10%;left:20%;animation:float 12s ease-in-out infinite alternate}
-@keyframes float{0%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-20px) scale(1.05)}100%{transform:translate(-15px,15px) scale(0.98)}}
+/* HUD Grid */
+.hud-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,240,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.02) 1px,transparent 1px);background-size:80px 80px}
 
 /* Layout */
-.container{position:relative;z-index:2;max-width:1400px;margin:0 auto;padding:20px}
+.container{position:relative;z-index:2;max-width:1600px;margin:0 auto;padding:20px}
 
-/* Header */
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(0,240,255,0.15)}
-.header-left{display:flex;align-items:center;gap:16px}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#00f0ff,#a855f7);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(0,240,255,0.3)}
-.logo-text h1{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,#00f0ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
-.logo-text p{font-size:13px;color:#64748b;letter-spacing:3px;text-transform:uppercase}
-.header-right{display:flex;gap:16px}
-.status-pill{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;background:rgba(14,14,22,0.8);border:1px solid rgba(255,255,255,0.06);font-family:'JetBrains Mono',monospace;font-size:12px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+/* ===== ARC REACTOR / CIRCULAR HUD ===== */
+.arc-reactor-container{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:0.15;width:600px;height:600px}
+.arc-reactor{width:100%;height:100%;position:relative}
+.arc-ring{position:absolute;border-radius:50%;border:2px solid rgba(0,240,255,0.3);animation:spin 20s linear infinite}
+.arc-ring:nth-child(1){width:100%;height:100%;top:0;left:0;border-color:rgba(0,240,255,0.2);animation-duration:30s}
+.arc-ring:nth-child(2){width:80%;height:80%;top:10%;left:10%;border-color:rgba(168,85,247,0.2);animation-duration:25s;animation-direction:reverse}
+.arc-ring:nth-child(3){width:60%;height:60%;top:20%;left:20%;border-color:rgba(255,45,149,0.2);animation-duration:20s}
+.arc-ring:nth-child(4){width:40%;height:40%;top:30%;left:30%;border-color:rgba(0,240,255,0.4);animation-duration:15s;animation-direction:reverse}
+.arc-core{position:absolute;width:20%;height:20%;top:40%;left:40%;border-radius:50%;background:radial-gradient(circle,rgba(0,240,255,0.6),transparent 70%);box-shadow:0 0 60px rgba(0,240,255,0.4);animation:pulse-core 3s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-core{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.2);opacity:1}}
 
-/* Dashboard Grid */
-.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-@media(max-width:1200px){.dashboard{grid-template-columns:repeat(2,1fr)}}
+/* ===== HEADER ===== */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding:20px;border:1px solid rgba(0,240,255,0.1);border-radius:16px;background:rgba(14,14,22,0.6);backdrop-filter:blur(20px)}
+.header-left{display:flex;align-items:center;gap:20px}
+.logo{display:flex;align-items:center;gap:16px}
+.logo-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#00f0ff,#a855f7);display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,240,255,0.4);animation:logo-pulse 3s infinite}
+@keyframes logo-pulse{0%,100%{box-shadow:0 0 40px rgba(0,240,255,0.4)}50%{box-shadow:0 0 60px rgba(0,240,255,0.7)}}
+.logo-text h1{font-family:'Orbitron',sans-serif;font-size:32px;font-weight:800;background:linear-gradient(135deg,#00f0ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px}
+.logo-text p{font-size:12px;color:#64748b;letter-spacing:4px;text-transform:uppercase}
+.header-right{display:flex;gap:12px;flex-wrap:wrap}
+.status-pill{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:100px;background:rgba(14,14,22,0.8);border:1px solid rgba(255,255,255,0.06);font-family:'JetBrains Mono',monospace;font-size:11px;transition:all 0.3s}
+.status-pill:hover{border-color:rgba(0,240,255,0.3)}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e;animation:dot-pulse 2s infinite}
+@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ===== SPEAK BUTTON ===== */
+.speak-btn{position:fixed;bottom:30px;right:30px;z-index:100;width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#00f0ff,#a855f7);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 40px rgba(0,240,255,0.5);transition:all 0.3s;animation:speak-float 3s ease-in-out infinite}
+.speak-btn:hover{transform:scale(1.1);box-shadow:0 0 60px rgba(0,240,255,0.8)}
+.speak-btn.active{background:linear-gradient(135deg,#ef4444,#f59e0b);animation:speak-pulse 0.5s infinite}
+@keyframes speak-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes speak-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+/* ===== DASHBOARD GRID ===== */
+.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:24px}
+@media(max-width:1400px){.dashboard{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.dashboard{grid-template-columns:1fr}}
 
-/* Cards */
-.card{background:rgba(14,14,22,0.7);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;transition:all 0.3s;position:relative;overflow:hidden}
-.card:hover{border-color:rgba(0,240,255,0.2);transform:translateY(-2px);box-shadow:0 8px 40px rgba(0,240,255,0.08)}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.3),transparent)}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.card-title{display:flex;align-items:center;gap:10px}
-.card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.card-icon.cyan{background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.2);color:#00f0ff}
-.card-icon.purple{background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);color:#a855f7}
-.card-icon.pink{background:rgba(255,45,149,0.1);border:1px solid rgba(255,45,149,0.2);color:#ff2d95}
-.card-icon.blue{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#3b82f6}
-.card-icon.green{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);color:#22c55e}
-.card-icon.yellow{background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);color:#eab308}
-.card-icon.orange{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2);color:#f97316}
-.card-icon.red{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444}
+/* ===== CARDS ===== */
+.card{background:rgba(14,14,22,0.7);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:24px;transition:all 0.4s;position:relative;overflow:hidden;cursor:pointer}
+.card:hover{border-color:rgba(0,240,255,0.3);transform:translateY(-4px) scale(1.01);box-shadow:0 12px 50px rgba(0,240,255,0.12)}
+.card::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:2px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.5),transparent);transition:left 0.6s}
+.card:hover::before{left:100%}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{display:flex;align-items:center;gap:12px}
+.card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all 0.3s}
+.card:hover .card-icon{transform:scale(1.1)}
+.card-icon.cyan{background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.25);color:#00f0ff;box-shadow:0 0 20px rgba(0,240,255,0.1)}
+.card-icon.purple{background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);color:#a855f7;box-shadow:0 0 20px rgba(168,85,247,0.1)}
+.card-icon.pink{background:rgba(255,45,149,0.1);border:1px solid rgba(255,45,149,0.25);color:#ff2d95;box-shadow:0 0 20px rgba(255,45,149,0.1)}
+.card-icon.blue{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:#3b82f6;box-shadow:0 0 20px rgba(59,130,246,0.1)}
+.card-icon.green{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#22c55e;box-shadow:0 0 20px rgba(34,197,94,0.1)}
+.card-icon.yellow{background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);color:#eab308;box-shadow:0 0 20px rgba(234,179,8,0.1)}
+.card-icon.orange{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.25);color:#f97316;box-shadow:0 0 20px rgba(249,115,22,0.1)}
+.card-icon.red{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#ef4444;box-shadow:0 0 20px rgba(239,68,68,0.1)}
 .card-label{font-family:'Orbitron',sans-serif;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:2px}
-.card-badge{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace}
-.badge-green{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.2)}
-.badge-cyan{background:rgba(0,240,255,0.15);color:#00f0ff;border:1px solid rgba(0,240,255,0.2)}
-.badge-purple{background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.2)}
+.card-badge{padding:6px 14px;border-radius:100px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;transition:all 0.3s}
+.card:hover .card-badge{transform:scale(1.05)}
+.badge-green{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.25)}
+.badge-cyan{background:rgba(0,240,255,0.15);color:#00f0ff;border:1px solid rgba(0,240,255,0.25)}
+.badge-purple{background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.25)}
+.badge-red{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.25)}
 
-/* Big numbers */
-.big-number{font-family:'Orbitron',sans-serif;font-size:42px;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 30px rgba(0,240,255,0.3)}
+/* ===== BIG NUMBERS ===== */
+.big-number{font-family:'Orbitron',sans-serif;font-size:48px;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 40px rgba(0,240,255,0.4);transition:all 0.3s}
+.card:hover .big-number{text-shadow:0 0 60px rgba(0,240,255,0.6)}
 .big-number.gradient{background:linear-gradient(135deg,#00f0ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.number-sub{font-size:13px;color:#64748b;margin-top:4px}
+.number-sub{font-size:13px;color:#64748b;margin-top:6px}
 
-/* Progress bar */
-.progress-container{margin-top:12px}
-.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
-.progress-track{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
-.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#00f0ff,#a855f7);transition:width 1s ease;position:relative}
-.progress-fill::after{content:'';position:absolute;top:0;right:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));animation:shimmer 2s infinite}
-@keyframes shimmer{0%{transform:translateX(-20px)}100%{transform:translateX(20px)}}
+/* ===== PROGRESS ===== */
+.progress-container{margin-top:16px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.progress-track{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00f0ff,#a855f7);transition:width 1s ease;position:relative;overflow:hidden}
+.progress-fill::after{content:'';position:absolute;top:0;right:0;bottom:0;width:40px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-40px)}100%{transform:translateX(40px)}}
 
-/* Mini stats grid */
-.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
-.mini-stat{text-align:center;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
-.mini-stat-value{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:#fff}
-.mini-stat-label{font-size:11px;color:#64748b;margin-top:4px}
+/* ===== MINI STATS ===== */
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.mini-stat{text-align:center;padding:14px;border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);transition:all 0.3s}
+.mini-stat:hover{background:rgba(0,240,255,0.05);border-color:rgba(0,240,255,0.1);transform:translateY(-2px)}
+.mini-stat-value{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:700;color:#fff;transition:all 0.3s}
+.mini-stat:hover .mini-stat-value{text-shadow:0 0 20px rgba(0,240,255,0.5)}
+.mini-stat-label{font-size:11px;color:#64748b;margin-top:6px}
 
-/* Activity feed */
-.feed-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px}
+/* ===== ACTIVITY FEED ===== */
+.feed-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px;transition:all 0.3s}
+.feed-item:hover{padding-left:8px;background:rgba(0,240,255,0.02);border-radius:8px}
 .feed-item:last-child{border-bottom:none}
-.feed-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.feed-dot.green{background:#22c55e;box-shadow:0 0 8px #22c55e}
-.feed-dot.cyan{background:#00f0ff;box-shadow:0 0 8px #00f0ff}
-.feed-dot.purple{background:#a855f7;box-shadow:0 0 8px #a855f7}
-.feed-dot.yellow{background:#eab308;box-shadow:0 0 8px #eab308}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 10px currentColor}
+.feed-dot.green{background:#22c55e;box-shadow:0 0 12px #22c55e}
+.feed-dot.cyan{background:#00f0ff;box-shadow:0 0 12px #00f0ff}
+.feed-dot.purple{background:#a855f7;box-shadow:0 0 12px #a855f7}
+.feed-dot.yellow{background:#eab308;box-shadow:0 0 12px #eab308}
 .feed-text{flex:1}
 .feed-time{font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;flex-shrink:0}
 
-/* Agent roster */
-.agent-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);margin-bottom:8px;transition:all 0.2s}
-.agent-row:hover{background:rgba(0,240,255,0.05);border-color:rgba(0,240,255,0.1)}
-.agent-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:'Orbitron',sans-serif}
+/* ===== BOARD OF DIRECTORS ===== */
+.bod-section{margin-bottom:24px}
+.bod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:768px){.bod-grid{grid-template-columns:1fr}}
+.bod-card{background:linear-gradient(135deg,rgba(0,240,255,0.05),rgba(168,85,247,0.05));border:1px solid rgba(0,240,255,0.15);border-radius:20px;padding:24px;text-align:center;position:relative;overflow:hidden;transition:all 0.4s;cursor:pointer}
+.bod-card:hover{border-color:rgba(0,240,255,0.4);transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,240,255,0.15)}
+.bod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00f0ff,#a855f7,transparent)}
+.bod-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a855f7,#00f0ff,transparent)}
+.bod-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00f0ff,#a855f7);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;box-shadow:0 0 40px rgba(0,240,255,0.4);animation:avatar-pulse 3s infinite}
+@keyframes avatar-pulse{0%,100%{box-shadow:0 0 40px rgba(0,240,255,0.4)}50%{box-shadow:0 0 60px rgba(0,240,255,0.7)}}
+.bod-name{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.bod-title{font-size:12px;color:#a855f7;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+.bod-desc{font-size:13px;color:#64748b;line-height:1.6;margin-bottom:16px}
+.bod-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.bod-stat{padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)}
+.bod-stat-value{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:#00f0ff}
+.bod-stat-label{font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+
+/* ===== AGENT ROSTER ===== */
+.agent-section{margin-bottom:24px}
+.squad-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 20px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+.squad-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.squad-name{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:2px}
+.squad-count{font-size:12px;color:#64748b;margin-left:auto;font-family:'JetBrains Mono',monospace}
+.agent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1200px){.agent-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.agent-grid{grid-template-columns:1fr}}
+.agent-card{padding:16px;border-radius:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);transition:all 0.4s;cursor:pointer;position:relative;overflow:hidden}
+.agent-card:hover{border-color:rgba(0,240,255,0.2);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,240,255,0.08)}
+.agent-card.active{border-color:rgba(34,197,94,0.3);box-shadow:0 0 30px rgba(34,197,94,0.15)}
+.agent-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.agent-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;font-family:'Orbitron',sans-serif;box-shadow:0 0 20px rgba(0,0,0,0.3)}
 .agent-avatar.sarah{background:linear-gradient(135deg,#00f0ff,#3b82f6);color:#000}
 .agent-avatar.mike{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff}
 .agent-avatar.emma{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
 .agent-avatar.david{background:linear-gradient(135deg,#22c55e,#06b6d4);color:#000}
 .agent-info{flex:1}
-.agent-name{font-weight:600;font-size:14px;color:#fff}
+.agent-name{font-weight:700;font-size:15px;color:#fff}
 .agent-role{font-size:11px;color:#64748b}
-.agent-status{display:flex;align-items:center;gap:6px;font-size:12px}
-.status-indicator{width:8px;height:8px;border-radius:50%}
-.status-indicator.ready{background:#22c55e;box-shadow:0 0 8px #22c55e}
-.status-indicator.standby{background:#eab308;box-shadow:0 0 8px #eab308}
+.agent-status{display:flex;align-items:center;gap:8px;font-size:12px}
+.status-indicator{width:10px;height:10px;border-radius:50%;transition:all 0.3s}
+.status-indicator.ready{background:#22c55e;box-shadow:0 0 12px #22c55e;animation:status-pulse 2s infinite}
+.status-indicator.standby{background:#eab308;box-shadow:0 0 12px #eab308}
+.status-indicator.calling{background:#00f0ff;box-shadow:0 0 12px #00f0ff;animation:status-pulse 1s infinite}
+@keyframes status-pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.agent-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04)}
+.agent-stat{text-align:center}
+.agent-stat-value{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:#fff}
+.agent-stat-label{font-size:10px;color:#64748b;margin-top:2px}
 
-/* Org chart section */
-.section-title{font-family:'Orbitron',sans-serif;font-size:16px;color:#00f0ff;text-transform:uppercase;letter-spacing:3px;margin:32px 0 16px;display:flex;align-items:center;gap:12px}
-.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,240,255,0.3),transparent)}
+/* ===== SECTION TITLES ===== */
+.section-title{font-family:'Orbitron',sans-serif;font-size:18px;color:#00f0ff;text-transform:uppercase;letter-spacing:4px;margin:40px 0 20px;display:flex;align-items:center;gap:16px}
+.section-title::before{content:'';width:40px;height:2px;background:linear-gradient(90deg,#00f0ff,transparent)}
+.section-title::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.3))}
 
-/* Boss tier */
-.boss-card{background:linear-gradient(135deg,rgba(0,240,255,0.08),rgba(168,85,247,0.08));border:1px solid rgba(0,240,255,0.2);border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden}
-.boss-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00f0ff,#a855f7,transparent)}
-.boss-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#00f0ff,#a855f7);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 0 30px rgba(0,240,255,0.3)}
-.boss-name{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:#fff}
-.boss-title{font-size:12px;color:#a855f7;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
-.boss-desc{font-size:13px;color:#64748b;margin-top:8px;line-height:1.5}
+/* ===== FLOW DIAGRAM ===== */
+.flow-container{padding:24px;border-radius:20px;background:rgba(14,14,22,0.5);border:1px solid rgba(255,255,255,0.06);margin-bottom:24px}
+.flow-diagram{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.flow-node{padding:20px 24px;border-radius:16px;text-align:center;min-width:140px;transition:all 0.4s;cursor:pointer;position:relative}
+.flow-node:hover{transform:scale(1.08);z-index:10}
+.flow-node.boss{background:linear-gradient(135deg,rgba(0,240,255,0.1),rgba(168,85,247,0.1));border:1px solid rgba(0,240,255,0.2)}
+.flow-node.worker{background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(168,85,247,0.1));border:1px solid rgba(59,130,246,0.2)}
+.flow-node.action{background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(234,179,8,0.1));border:1px solid rgba(34,197,94,0.2)}
+.flow-node.revenue{background:linear-gradient(135deg,rgba(239,68,68,0.1),rgba(249,115,22,0.1));border:1px solid rgba(239,68,68,0.2)}
+.flow-icon{font-size:32px;margin-bottom:8px}
+.flow-name{font-family:'Orbitron',sans-serif;font-size:13px;color:#fff;margin-bottom:4px}
+.flow-desc{font-size:11px;color:#64748b}
+.flow-arrow{font-size:24px;color:#64748b;animation:arrow-bounce 1.5s infinite}
+@keyframes arrow-bounce{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 
-/* Flow arrows */
-.flow-arrow{text-align:center;padding:8px 0;color:#64748b;font-size:20px}
+/* ===== TIMELINE ===== */
+.timeline{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.timeline{grid-template-columns:1fr}}
+.timeline-card{padding:20px;border-radius:16px;background:rgba(14,14,22,0.5);border:1px solid rgba(255,255,255,0.06)}
+.timeline-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.timeline-item{display:flex;gap:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.02);margin-bottom:10px;transition:all 0.3s;cursor:pointer}
+.timeline-item:hover{background:rgba(0,240,255,0.03);transform:translateX(4px)}
+.timeline-time{font-family:'JetBrains Mono',monospace;font-size:14px;color:#00f0ff;flex-shrink:0;width:60px}
+.timeline-content h4{font-size:14px;color:#fff;margin-bottom:4px}
+.timeline-content p{font-size:12px;color:#64748b}
 
-/* Two column layout */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:768px){.two-col{grid-template-columns:1fr}}
+/* ===== CIRCULAR STATS ===== */
+.circle-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:24px}
+@media(max-width:1200px){.circle-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.circle-stats{grid-template-columns:1fr}}
+.circle-stat{text-align:center;padding:24px;border-radius:20px;background:rgba(14,14,22,0.5);border:1px solid rgba(255,255,255,0.06);transition:all 0.4s;cursor:pointer;position:relative;overflow:hidden}
+.circle-stat:hover{border-color:rgba(0,240,255,0.3);transform:translateY(-4px)}
+.circle-ring{width:120px;height:120px;margin:0 auto 16px;position:relative}
+.circle-ring svg{transform:rotate(-90deg)}
+.circle-ring-bg{fill:none;stroke:rgba(255,255,255,0.05);stroke-width:6}
+.circle-ring-fill{fill:none;stroke:url(#gradient);stroke-width:6;stroke-linecap:round;stroke-dasharray:339.292;stroke-dashoffset:339.292;transition:stroke-dashoffset 2s ease;filter:drop-shadow(0 0 8px rgba(0,240,255,0.3))}
+.circle-value{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:800;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.circle-label{font-size:13px;color:#64748b;margin-top:8px}
+.circle-sub{font-size:11px;color:#475569;margin-top:4px}
 
-/* Glow text */
-.glow-text{text-shadow:0 0 20px rgba(0,240,255,0.4)}
+/* ===== FOOTER ===== */
+.footer{text-align:center;padding:40px 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:40px}
+.footer-title{font-family:'Orbitron',sans-serif;font-size:14px;color:#64748b;letter-spacing:4px}
+.footer-sub{font-size:12px;color:#475569;margin-top:8px}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){.big-number{font-size:32px}.header{flex-direction:column;gap:16px}.arc-reactor-container{width:300px;height:300px}}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.modal-overlay.active{display:flex}
+.modal-content{background:linear-gradient(135deg,rgba(14,14,22,0.95),rgba(20,20,35,0.95));border:1px solid rgba(0,240,255,0.3);border-radius:24px;padding:40px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all 0.3s}
+.modal-close:hover{background:rgba(239,68,68,0.2);border-color:#ef4444}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#00f0ff,#a855f7);border-radius:2px}
-
-/* Responsive */
-@media(max-width:768px){.big-number{font-size:28px}.header{flex-direction:gap:12px}.header-right{flex-wrap:wrap}}
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
+
+<div class="stars" id="stars"></div>
+<div class="hud-grid"></div>
 <div class="scanlines"></div>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
+
+<div class="arc-reactor-container">
+  <div class="arc-reactor">
+    <div class="arc-ring"></div>
+    <div class="arc-ring"></div>
+    <div class="arc-ring"></div>
+    <div class="arc-ring"></div>
+    <div class="arc-core"></div>
+  </div>
+</div>
+
+<svg width="0" height="0">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <div class="modal-close" onclick="closeModal()">×</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<button class="speak-btn" id="speakBtn" onclick="toggleSpeak()" title="Click to hear JARVIS speak">🔊</button>
 
 <div class="container">
 
-<!-- HEADER -->
 <div class="header">
-<div class="header-left">
-<div class="logo">
-<div class="logo-icon">🤖</div>
-<div class="logo-text">
-<h1>J.A.R.V.I.S.</h1>
-<p>AI Sales Command Center</p>
-</div>
-</div>
-</div>
-<div class="header-right">
-<div class="status-pill"><span class="status-dot"></span> ALL SYSTEMS ONLINE</div>
-<div class="status-pill">⏱️ <span id="clock">00:00:00</span></div>
-<div class="status-pill">📅 DAY 1 OF 14</div>
-</div>
+  <div class="header-left">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div class="logo-text">
+        <h1>J.A.R.V.I.S.</h1>
+        <p>AI Sales Command Center v3.0</p>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-pill"><span class="status-dot"></span> ALL SYSTEMS ONLINE</div>
+    <div class="status-pill">⏱️ <span id="clock">00:00:00</span></div>
+    <div class="status-pill">📅 DAY 1 OF 14</div>
+    <div class="status-pill">🔥 $50K MISSION</div>
+  </div>
 </div>
 
-<!-- TOP ROW: Revenue + System Health -->
+<div class="circle-stats">
+  <div class="circle-stat" onclick="showAgentDetails('revenue')">
+    <div class="circle-ring">
+      <svg viewBox="0 0 120 120">
+        <circle class="circle-ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="circle-ring-fill" cx="60" cy="60" r="54" style="stroke-dashoffset:339.292"/>
+      </svg>
+      <div class="circle-value" style="color:#00f0ff">0%</div>
+    </div>
+    <div class="circle-label">Revenue Progress</div>
+    <div class="circle-sub">$0 / $50,000</div>
+  </div>
+  <div class="circle-stat" onclick="showAgentDetails('agents')">
+    <div class="circle-ring">
+      <svg viewBox="0 0 120 120">
+        <circle class="circle-ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="circle-ring-fill" cx="60" cy="60" r="54" style="stroke-dashoffset:50"/>
+      </svg>
+      <div class="circle-value" style="color:#22c55e">16</div>
+    </div>
+    <div class="circle-label">Active Agents</div>
+    <div class="circle-sub">16/16 Ready</div>
+  </div>
+  <div class="circle-stat" onclick="showAgentDetails('leads')">
+    <div class="circle-ring">
+      <svg viewBox="0 0 120 120">
+        <circle class="circle-ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="circle-ring-fill" cx="60" cy="60" r="54" style="stroke-dashoffset:0"/>
+      </svg>
+      <div class="circle-value" style="color:#a855f7">562</div>
+    </div>
+    <div class="circle-label">Leads Mapped</div>
+    <div class="circle-sub">Calgary Trade</div>
+  </div>
+  <div class="circle-stat" onclick="showAgentDetails('system')">
+    <div class="circle-ring">
+      <svg viewBox="0 0 120 120">
+        <circle class="circle-ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="circle-ring-fill" cx="60" cy="60" r="54" style="stroke-dashoffset:0"/>
+      </svg>
+      <div class="circle-value" style="color:#22c55e">100%</div>
+    </div>
+    <div class="circle-label">System Health</div>
+    <div class="circle-sub">7/7 Online</div>
+  </div>
+</div>
+
 <div class="dashboard">
 
-<!-- REVENUE -->
-<div class="card" style="grid-column:span 2">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon cyan">💰</div>
-<div>
-<div class="card-label">Live Revenue</div>
-<div style="font-size:13px;color:#64748b">Real-time earnings tracker</div>
-</div>
-</div>
-<div class="card-badge badge-green">📈 +12.5%</div>
-</div>
-<div class="big-number gradient" style="font-size:52px">$0.00</div>
-<div class="number-sub">/ $50,000.00 GOAL</div>
-<div class="progress-container">
-<div class="progress-label"><span>Progress to $50K</span><span style="color:#00f0ff">0.0%</span></div>
-<div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
-</div>
-<div class="mini-grid" style="margin-top:16px">
-<div class="mini-stat"><div class="mini-stat-value" style="color:#00f0ff">0</div><div class="mini-stat-label">Deals Closed</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#a855f7">0</div><div class="mini-stat-label">Demos Booked</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#22c55e">0</div><div class="mini-stat-label">Conversations</div></div>
-</div>
-</div>
-
-<!-- SYSTEM HEALTH -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon green">🏥</div>
-<div>
-<div class="card-label">System Health</div>
-<div style="font-size:13px;color:#64748b">7/7 services online</div>
-</div>
-</div>
-<div class="card-badge badge-green">🟢 LIVE</div>
-</div>
-<div style="space-y:10px">
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🌐 Next.js API</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 45ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">⚡ n8n Workflows</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 120ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📞 Vapi Voice AI</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 200ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">💬 Twilio SMS</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 150ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📧 SendGrid Email</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 180ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🧠 OpenAI GPT-4</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 350ms</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">🗄️ Lead Database</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 80ms</span></div>
-</div>
+<div class="card" style="grid-column:span 2" onclick="showAgentDetails('revenue')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon cyan">💰</div>
+      <div>
+        <div class="card-label">Live Revenue Tracker</div>
+        <div style="font-size:13px;color:#64748b">Real-time earnings counter</div>
+      </div>
+    </div>
+    <div class="card-badge badge-cyan">📈 LIVE</div>
+  </div>
+  <div class="big-number gradient" style="font-size:56px">$0.00</div>
+  <div class="number-sub">/ $50,000.00 GOAL • 14 DAYS REMAINING</div>
+  <div class="progress-container">
+    <div class="progress-label"><span>Progress to $50K</span><span style="color:#00f0ff">0.0%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="mini-grid" style="margin-top:16px">
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#00f0ff">0</div><div class="mini-stat-label">Deals Closed</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#a855f7">0</div><div class="mini-stat-label">Demos Booked</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#22c55e">0</div><div class="mini-stat-label">Conversations</div></div>
+  </div>
 </div>
 
-<!-- VOICE AGENTS -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon purple">📞</div>
-<div>
-<div class="card-label">Voice Agents</div>
-<div style="font-size:13px;color:#64748b">16 AI cold callers ready</div>
-</div>
-</div>
-<div class="card-badge badge-cyan">🟡 STANDBY</div>
-</div>
-<div class="mini-grid">
-<div class="mini-stat"><div class="mini-stat-value" style="color:#22c55e">0</div><div class="mini-stat-label">On Call</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#eab308">16</div><div class="mini-stat-label">Idle</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#ef4444">0</div><div class="mini-stat-label">Offline</div></div>
-</div>
-<div style="margin-top:12px">
-<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px"><span>Total Calls Today</span><span style="font-family:'JetBrains Mono',monospace;color:#fff">0</span></div>
-<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px"><span>Avg Duration</span><span style="font-family:'JetBrains Mono',monospace;color:#fff">0:00</span></div>
-</div>
-</div>
-
-<!-- SMS CAMPAIGN -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon cyan">💬</div>
-<div>
-<div class="card-label">SMS Campaign</div>
-<div style="font-size:13px;color:#64748b">Text message outreach</div>
-</div>
-</div>
-<div class="card-badge badge-purple">⏳ PENDING</div>
-</div>
-<div style="margin-top:12px">
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📤 Sent</span><span style="font-family:'JetBrains Mono',monospace;color:#00f0ff">0</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">✅ Delivered</span><span style="font-family:'JetBrains Mono',monospace;color:#22c55e">0</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">💬 Replies</span><span style="font-family:'JetBrains Mono',monospace;color:#a855f7">0</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">🚫 Opt-outs</span><span style="font-family:'JetBrains Mono',monospace;color:#ef4444">0</span></div>
-</div>
-<div class="progress-container" style="margin-top:12px">
-<div class="progress-label"><span>Reply Rate</span><span style="color:#00f0ff">0.0%</span></div>
-<div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
-</div>
+<div class="card" onclick="showAgentDetails('system')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon green">🏥</div>
+      <div>
+        <div class="card-label">System Health</div>
+        <div style="font-size:13px;color:#64748b">7/7 services online</div>
+      </div>
+    </div>
+    <div class="card-badge badge-green">🟢 LIVE</div>
+  </div>
+  <div style="space-y:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🌐 Next.js API</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 45ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">⚡ n8n Workflows</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 120ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📞 Vapi Voice AI</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 200ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">💬 Twilio SMS</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 150ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📧 SendGrid Email</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 180ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🧠 OpenAI GPT-4</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 350ms</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="font-size:13px">🗄️ Lead Database</span><span style="color:#22c55e;font-size:12px;font-family:'JetBrains Mono',monospace">● 80ms</span></div>
+  </div>
 </div>
 
-<!-- EMAIL CAMPAIGN -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon pink">📧</div>
-<div>
-<div class="card-label">Email Campaign</div>
-<div style="font-size:13px;color:#64748b">Automated sequences</div>
-</div>
-</div>
-<div class="card-badge badge-purple">⏳ PENDING</div>
-</div>
-<div style="margin-top:12px">
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📤 Sent</span><span style="font-family:'JetBrains Mono',monospace;color:#00f0ff">0</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">👁️ Opened</span><span style="font-family:'JetBrains Mono',monospace;color:#22c55e">0</span></div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🖱️ Clicked</span><span style="font-family:'JetBrains Mono',monospace;color:#a855f7">0</span></div>
-</div>
-<div class="progress-container" style="margin-top:12px">
-<div class="progress-label"><span>Open Rate</span><span style="color:#00f0ff">0.0%</span></div>
-<div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
-</div>
-</div>
-
-<!-- LEAD SCRAPER -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon green">🔍</div>
-<div>
-<div class="card-label">Lead Scraper</div>
-<div style="font-size:13px;color:#64748b">Calgary trade businesses</div>
-</div>
-</div>
-<div class="card-badge badge-green">✅ DONE</div>
-</div>
-<div class="big-number" style="font-size:36px;color:#22c55e">562</div>
-<div class="number-sub">Total Leads Mapped</div>
-<div class="mini-grid" style="margin-top:12px">
-<div class="mini-stat"><div class="mini-stat-value" style="color:#00f0ff">100</div><div class="mini-stat-label">HVAC</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#a855f7">97</div><div class="mini-stat-label">Plumbing</div></div>
-<div class="mini-stat"><div class="mini-stat-value" style="color:#f59e0b">88</div><div class="mini-stat-label">Electrical</div></div>
-</div>
-<div style="margin-top:12px;font-size:12px;color:#64748b">+ Roofing (98) + General (179)</div>
+<div class="card" onclick="showAgentDetails('voice')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon purple">📞</div>
+      <div>
+        <div class="card-label">Voice Army</div>
+        <div style="font-size:13px;color:#64748b">16 AI cold callers</div>
+      </div>
+    </div>
+    <div class="card-badge badge-cyan">🟡 STANDBY</div>
+  </div>
+  <div class="mini-grid">
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#22c55e">0</div><div class="mini-stat-label">On Call</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#eab308">16</div><div class="mini-stat-label">Idle</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#ef4444">0</div><div class="mini-stat-label">Offline</div></div>
+  </div>
+  <div style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px"><span>Total Calls Today</span><span style="font-family:'JetBrains Mono',monospace;color:#fff">0</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px"><span>Avg Duration</span><span style="font-family:'JetBrains Mono',monospace;color:#fff">0:00</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px"><span>Conversion Rate</span><span style="font-family:'JetBrains Mono',monospace;color:#00f0ff">0.0%</span></div>
+  </div>
 </div>
 
-<!-- ACTIVITY FEED -->
-<div class="card" style="grid-column:span 2">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon yellow">📡</div>
-<div>
-<div class="card-label">Live Activity Feed</div>
-<div style="font-size:13px;color:#64748b">Real-time system events</div>
-</div>
-</div>
-<div class="card-badge badge-green">● LIVE</div>
-</div>
-<div style="max-height:220px;overflow-y:auto">
-<div class="feed-item"><div class="feed-dot green"></div><div class="feed-text"><b style="color:#22c55e">SYSTEM</b> JARVIS Dashboard deployed to GitHub Pages</div><div class="feed-time">Now</div></div>
-<div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">BUILD</b> 16 voice agent configs compiled</div><div class="feed-time">2h ago</div></div>
-<div class="feed-item"><div class="feed-dot purple"></div><div class="feed-text"><b style="color:#a855f7">LEADS</b> 562 Calgary businesses scraped & enriched</div><div class="feed-time">4h ago</div></div>
-<div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">WEBSITE</b> agautomation.ca rebuilt — no pricing, custom quotes</div><div class="feed-time">5h ago</div></div>
-<div class="feed-item"><div class="feed-dot green"></div><div class="feed-text"><b style="color:#22c55e">SMS</b> Test message sent to +1 (306) 630-8369 ✅</div><div class="feed-time">6h ago</div></div>
-<div class="feed-item"><div class="feed-dot yellow"></div><div class="feed-text"><b style="color:#eab308">VOICE</b> Vapi.ai webhook configured — awaiting activation</div><div class="feed-time">8h ago</div></div>
-<div class="feed-item"><div class="feed-dot purple"></div><div class="feed-text"><b style="color:#a855f7">EMAIL</b> 25 personalized email templates created</div><div class="feed-time">10h ago</div></div>
-<div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">DEMO</b> 5 industry-specific demo page templates built</div><div class="feed-time">12h ago</div></div>
-</div>
-</div>
-
-</div><!-- end dashboard -->
-
-<!-- ORGANIZATION CHART -->
-<div class="section-title">🎯 ORGANIZATION CHART — YOUR AI WORKFORCE</div>
-
-<div class="two-col">
-<!-- BOSS LAYER -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon cyan">👑</div>
-<div>
-<div class="card-label">BOSS AGENTS — The Commanders</div>
-<div style="font-size:13px;color:#64748b">Supervise and coordinate worker agents</div>
-</div>
-</div>
+<div class="card" onclick="showAgentDetails('sms')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon cyan">💬</div>
+      <div>
+        <div class="card-label">SMS Campaign</div>
+        <div style="font-size:13px;color:#64748b">Text message outreach</div>
+      </div>
+    </div>
+    <div class="card-badge badge-purple">⏳ PENDING</div>
+  </div>
+  <div style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📤 Sent</span><span style="font-family:'JetBrains Mono',monospace;color:#00f0ff">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">✅ Delivered</span><span style="font-family:'JetBrains Mono',monospace;color:#22c55e">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">💬 Replies</span><span style="font-family:'JetBrains Mono',monospace;color:#a855f7">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="font-size:13px">🚫 Opt-outs</span><span style="font-family:'JetBrains Mono',monospace;color:#ef4444">0</span></div>
+  </div>
+  <div class="progress-container" style="margin-top:12px">
+    <div class="progress-label"><span>Reply Rate</span><span style="color:#00f0ff">0.0%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
 </div>
 
-<div class="boss-card" style="margin-bottom:16px">
-<div class="boss-avatar">🎯</div>
-<div class="boss-name">THE CLOSER</div>
-<div class="boss-title">Sales Commander</div>
-<div class="boss-desc">Reviews all demo bookings, prepares proposals, closes deals. Targets: 1 close/day minimum.</div>
+<div class="card" onclick="showAgentDetails('email')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon pink">📧</div>
+      <div>
+        <div class="card-label">Email Campaign</div>
+        <div style="font-size:13px;color:#64748b">Automated sequences</div>
+      </div>
+    </div>
+    <div class="card-badge badge-purple">⏳ PENDING</div>
+  </div>
+  <div style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">📤 Sent</span><span style="font-family:'JetBrains Mono',monospace;color:#00f0ff">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">👁️ Opened</span><span style="font-family:'JetBrains Mono',monospace;color:#22c55e">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:13px">🖱️ Clicked</span><span style="font-family:'JetBrains Mono',monospace;color:#a855f7">0</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="font-size:13px">↩️ Replied</span><span style="font-family:'JetBrains Mono',monospace;color:#eab308">0</span></div>
+  </div>
+  <div class="progress-container" style="margin-top:12px">
+    <div class="progress-label"><span>Open Rate</span><span style="color:#00f0ff">0.0%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
 </div>
 
-<div class="boss-card" style="margin-bottom:16px">
-<div class="boss-avatar">📊</div>
-<div class="boss-name">THE ORGANIZER</div>
-<div class="boss-title">Operations Commander</div>
-<div class="boss-desc">Schedules all agent shifts, assigns leads, monitors performance, reassigns underperformers.</div>
+<div class="card" onclick="showAgentDetails('leads')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon green">🔍</div>
+      <div>
+        <div class="card-label">Lead Scraper</div>
+        <div style="font-size:13px;color:#64748b">Calgary trade businesses</div>
+      </div>
+    </div>
+    <div class="card-badge badge-green">✅ DONE</div>
+  </div>
+  <div class="big-number" style="font-size:42px;color:#22c55e">562</div>
+  <div class="number-sub">Total Leads Mapped & Enriched</div>
+  <div class="mini-grid" style="margin-top:14px">
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#00f0ff">100</div><div class="mini-stat-label">HVAC</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#a855f7">97</div><div class="mini-stat-label">Plumbing</div></div>
+    <div class="mini-stat"><div class="mini-stat-value" style="color:#f59e0b">88</div><div class="mini-stat-label">Electrical</div></div>
+  </div>
+  <div style="margin-top:14px;font-size:12px;color:#64748b">+ Roofing (98) + General Contractors (179)</div>
 </div>
 
-<div class="boss-card">
-<div class="boss-avatar">🔍</div>
-<div class="boss-name">THE BLOODHOUND</div>
-<div class="boss-title">Intel Commander</div>
-<div class="boss-desc">Scrapes new leads daily, enriches data, feeds qualified prospects to worker agents.</div>
-</div>
-</div>
-
-<!-- WORKER LAYER -->
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon purple">⚙️</div>
-<div>
-<div class="card-label">WORKER AGENTS — The Specialists</div>
-<div style="font-size:13px;color:#64748b">Execute specific tasks in their lanes</div>
-</div>
-</div>
-</div>
-
-<!-- SARAH SQUAD -->
-<div style="margin-bottom:20px">
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#00f0ff;margin-bottom:10px;letter-spacing:2px">🔥 SARAH SQUAD (HVAC) — 100 Leads</div>
-<div class="agent-row"><div class="agent-avatar sarah">S1</div><div class="agent-info"><div class="agent-name">Sarah</div><div class="agent-role">Warm Pro — Bella voice</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar sarah">R2</div><div class="agent-info"><div class="agent-name">Riley</div><div class="agent-role">Tech-Savvy — Bella+energy</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar sarah">J3</div><div class="agent-info"><div class="agent-name">Jordan</div><div class="agent-role">Steady — Bella+calm</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar sarah">M4</div><div class="agent-info"><div class="agent-name">Morgan</div><div class="agent-role">Neighborly — Bella+friendly</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-</div>
-
-<!-- MIKE SQUAD -->
-<div style="margin-bottom:20px">
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#a855f7;margin-bottom:10px;letter-spacing:2px">💧 MIKE SQUAD (Plumbing) — 97 Leads</div>
-<div class="agent-row"><div class="agent-avatar mike">M1</div><div class="agent-info"><div class="agent-name">Mike</div><div class="agent-role">Veteran — Josh gravelly</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar mike">D2</div><div class="agent-info"><div class="agent-name">Danny</div><div class="agent-role">Hustler — Josh+upbeat</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar mike">F3</div><div class="agent-info"><div class="agent-name">Frank</div><div class="agent-role">No-Nonsense — Josh+serious</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar mike">T4</div><div class="agent-info"><div class="agent-name">Terry</div><div class="agent-role">Helpful — Josh+friendly</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-</div>
-
-<!-- EMMA SQUAD -->
-<div style="margin-bottom:20px">
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#f59e0b;margin-bottom:10px;letter-spacing:2px">⚡ EMMA SQUAD (Electrical) — 88 Leads</div>
-<div class="agent-row"><div class="agent-avatar emma">E1</div><div class="agent-info"><div class="agent-name">Emma</div><div class="agent-role">Polished Expert — Bella+pro</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar emma">C2</div><div class="agent-info"><div class="agent-name">Chloe</div><div class="agent-role">Trustworthy — Bella+warm</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar emma">A3</div><div class="agent-info"><div class="agent-name">Alex</div><div class="agent-role">Direct — Josh+even</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar emma">S4</div><div class="agent-info"><div class="agent-name">Sam</div><div class="agent-role">Easy-Going — Bella+casual</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-</div>
-
-<!-- DAVID SQUAD -->
-<div>
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#22c55e;margin-bottom:10px;letter-spacing:2px">🏗️ DAVID SQUAD (General) — 179 Leads</div>
-<div class="agent-row"><div class="agent-avatar david">D1</div><div class="agent-info"><div class="agent-name">David</div><div class="agent-role">Veteran Leader — Josh+authority</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar david">C2</div><div class="agent-info"><div class="agent-name">Chris</div><div class="agent-role">Relatable — Josh+young</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar david">P3</div><div class="agent-info"><div class="agent-name">Pat</div><div class="agent-role">Gender-Neutral Pro — Bella+neutral</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-<div class="agent-row"><div class="agent-avatar david">T4</div><div class="agent-info"><div class="agent-name">Taylor</div><div class="agent-role">Strategic Advisor — Josh+warm</div></div><div class="agent-status"><div class="status-indicator standby"></div>Standby</div></div>
-</div>
-
-</div>
-</div><!-- end two-col -->
-
-<!-- AUTOMATION FLOW -->
-<div class="section-title">🔄 FULL AUTOMATION FLOW — HOW IT ALL WORKS</div>
-
-<div class="card" style="margin-bottom:16px">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon yellow">🔄</div>
-<div>
-<div class="card-label">The Loop — 100% Automated</div>
-<div style="font-size:13px;color:#64748b">You sleep. They work. You wake up to deals.</div>
-</div>
-</div>
-</div>
-
-<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:center;text-align:center;margin:20px 0">
-<div style="padding:16px 8px;border-radius:12px;background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.15)">
-<div style="font-size:28px;margin-bottom:8px">🔍</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:11px;color:#00f0ff">BLOODHOUND</div>
-<div style="font-size:11px;color:#64748b;margin-top:4px">Scrapes 50+ leads/day</div>
-</div>
-<div style="color:#64748b;font-size:20px">→</div>
-<div style="padding:16px 8px;border-radius:12px;background:rgba(168,85,247,0.05);border:1px solid rgba(168,85,247,0.15)">
-<div style="font-size:28px;margin-bottom:8px">📊</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:11px;color:#a855f7">ORGANIZER</div>
-<div style="font-size:11px;color:#64748b;margin-top:4px">Assigns to agents</div>
-</div>
-<div style="color:#64748b;font-size:20px">→</div>
-<div style="padding:16px 8px;border-radius:12px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15)">
-<div style="font-size:28px;margin-bottom:8px">📞</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:11px;color:#3b82f6">16 AGENTS</div>
-<div style="font-size:11px;color:#64748b;margin-top:4px">Call + SMS + Email</div>
-</div>
-<div style="color:#64748b;font-size:20px">→</div>
-<div style="padding:16px 8px;border-radius:12px;background:rgba(234,179,8,0.05);border:1px solid rgba(234,179,8,0.15)">
-<div style="font-size:28px;margin-bottom:8px">📅</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:11px;color:#eab308">DEMO BOOKED</div>
-<div style="font-size:11px;color:#64748b;margin-top:4px">Calendar filled</div>
-</div>
-</div>
-
-<div style="text-align:center;margin:8px 0"><div style="color:#64748b;font-size:24px">↓</div></div>
-
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-<div style="padding:16px;border-radius:12px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.15);text-align:center">
-<div style="font-size:28px;margin-bottom:8px">🎯</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#22c55e">THE CLOSER</div>
-<div style="font-size:12px;color:#64748b;margin-top:4px">Reviews demo → Sends proposal → Closes deal</div>
-</div>
-<div style="padding:16px;border-radius:12px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);text-align:center">
-<div style="font-size:28px;margin-bottom:8px">💰</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#ef4444">REVENUE</div>
-<div style="font-size:12px;color:#64748b;margin-top:4px">Stripe payment → Dashboard updates → You notified</div>
-</div>
-<div style="padding:16px;border-radius:12px;background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.15);text-align:center">
-<div style="font-size:28px;margin-bottom:8px">🔄</div>
-<div style="font-family:'Orbitron',sans-serif;font-size:13px;color:#00f0ff">REPEAT</div>
-<div style="font-size:12px;color:#64748b;margin-top:4px">Loop restarts with new leads</div>
-</div>
+<div class="card" style="grid-column:span 2" onclick="showAgentDetails('activity')">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-icon yellow">📡</div>
+      <div>
+        <div class="card-label">Live Activity Feed</div>
+        <div style="font-size:13px;color:#64748b">Real-time system events</div>
+      </div>
+    </div>
+    <div class="card-badge badge-green">● LIVE</div>
+  </div>
+  <div style="max-height:240px;overflow-y:auto">
+    <div class="feed-item"><div class="feed-dot green"></div><div class="feed-text"><b style="color:#22c55e">SYSTEM</b> JARVIS v3.0 deployed — Iron Man interface active</div><div class="feed-time">Now</div></div>
+    <div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">BUILD</b> Board of Directors agents configured — 3 bosses ready</div><div class="feed-time">2m ago</div></div>
+    <div class="feed-item"><div class="feed-dot purple"></div><div class="feed-text"><b style="color:#a855f7">LEADS</b> 562 Calgary businesses scraped & enriched</div><div class="feed-time">4h ago</div></div>
+    <div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">WEBSITE</b> agautomation.ca rebuilt — custom quotes only</div><div class="feed-time">5h ago</div></div>
+    <div class="feed-item"><div class="feed-dot green"></div><div class="feed-text"><b style="color:#22c55e">SMS</b> Test message sent to +1 (306) 630-8369 ✅</div><div class="feed-time">6h ago</div></div>
+    <div class="feed-item"><div class="feed-dot yellow"></div><div class="feed-text"><b style="color:#eab308">VOICE</b> Vapi.ai webhook configured — awaiting activation</div><div class="feed-time">8h ago</div></div>
+    <div class="feed-item"><div class="feed-dot purple"></div><div class="feed-text"><b style="color:#a855f7">EMAIL</b> 25 personalized email templates created</div><div class="feed-time">10h ago</div></div>
+    <div class="feed-item"><div class="feed-dot cyan"></div><div class="feed-text"><b style="color:#00f0ff">DEMO</b> 5 industry-specific demo page templates built</div><div class="feed-time">12h ago</div></div>
+  </div>
 </div>
 
 </div>
 
-<!-- TOMORROW'S LAUNCH PLAN -->
+<div class="section-title">👑 BOARD OF DIRECTORS — The Boss Layer</div>
+<div class="bod-section">
+  <div class="bod-grid">
+    <div class="bod-card" onclick="showAgentDetails('closer')">
+      <div class="bod-avatar">🎯</div>
+      <div class="bod-name">THE CLOSER</div>
+      <div class="bod-title">Sales Commander</div>
+      <div class="bod-desc">Reviews all demo bookings, prepares proposals, negotiates deals, tracks revenue. The final decision maker on every sale.</div>
+      <div class="bod-stats">
+        <div class="bod-stat"><div class="bod-stat-value">0</div><div class="bod-stat-label">Deals Closed</div></div>
+        <div class="bod-stat"><div class="bod-stat-value">0</div><div class="bod-stat-label">Proposals Sent</div></div>
+      </div>
+    </div>
+    <div class="bod-card" onclick="showAgentDetails('organizer')">
+      <div class="bod-avatar">📊</div>
+      <div class="bod-name">THE ORGANIZER</div>
+      <div class="bod-title">Operations Commander</div>
+      <div class="bod-desc">Schedules all agent shifts, assigns leads, monitors performance, reassigns underperformers, manages the pipeline.</div>
+      <div class="bod-stats">
+        <div class="bod-stat"><div class="bod-stat-value">16</div><div class="bod-stat-label">Agents Managed</div></div>
+        <div class="bod-stat"><div class="bod-stat-value">562</div><div class="bod-stat-label">Leads Assigned</div></div>
+      </div>
+    </div>
+    <div class="bod-card" onclick="showAgentDetails('bloodhound')">
+      <div class="bod-avatar">🔍</div>
+      <div class="bod-name">THE BLOODHOUND</div>
+      <div class="bod-title">Intel Commander</div>
+      <div class="bod-desc">Scrapes 50+ new leads daily, enriches data, feeds qualified prospects to worker agents. Never stops hunting.</div>
+      <div class="bod-stats">
+        <div class="bod-stat"><div class="bod-stat-value">562</div><div class="bod-stat-label">Leads Found</div></div>
+        <div class="bod-stat"><div class="bod-stat-value">5</div><div class="bod-stat-label">Industries</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">🔄 FULL AUTOMATION FLOW</div>
+<div class="flow-container">
+  <div class="flow-diagram">
+    <div class="flow-node boss" onclick="showAgentDetails('bloodhound')">
+      <div class="flow-icon">🔍</div>
+      <div class="flow-name">BLOODHOUND</div>
+      <div class="flow-desc">Scrape 50+/day</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node boss" onclick="showAgentDetails('organizer')">
+      <div class="flow-icon">📊</div>
+      <div class="flow-name">ORGANIZER</div>
+      <div class="flow-desc">Assign leads</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node worker" onclick="showAgentDetails('voice')">
+      <div class="flow-icon">📞</div>
+      <div class="flow-name">16 AGENTS</div>
+      <div class="flow-desc">Call/SMS/Email</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node action" onclick="showAgentDetails('demos')">
+      <div class="flow-icon">📅</div>
+      <div class="flow-name">DEMO</div>
+      <div class="flow-desc">Calendar booked</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node boss" onclick="showAgentDetails('closer')">
+      <div class="flow-icon">🎯</div>
+      <div class="flow-name">CLOSER</div>
+      <div class="flow-desc">Close deal</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node revenue" onclick="showAgentDetails('revenue')">
+      <div class="flow-icon">💰</div>
+      <div class="flow-name">REVENUE</div>
+      <div class="flow-desc">Stripe payment</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">⚙️ WORKER AGENTS — The Specialists</div>
+
+<div class="agent-section">
+  <div class="squad-header">
+    <div class="squad-icon" style="background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.2)">🔥</div>
+    <div class="squad-name" style="color:#00f0ff">SARAH SQUAD (HVAC)</div>
+    <div class="squad-count">100 leads assigned</div>
+  </div>
+  <div class="agent-grid">
+    <div class="agent-card" onclick="showAgentDetails('sarah')">
+      <div class="agent-header">
+        <div class="agent-avatar sarah">S1</div>
+        <div class="agent-info">
+          <div class="agent-name">Sarah</div>
+          <div class="agent-role">Warm Pro — Bella voice</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('riley')">
+      <div class="agent-header">
+        <div class="agent-avatar sarah">R2</div>
+        <div class="agent-info">
+          <div class="agent-name">Riley</div>
+          <div class="agent-role">Tech-Savvy — Bella+energy</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('jordan')">
+      <div class="agent-header">
+        <div class="agent-avatar sarah">J3</div>
+        <div class="agent-info">
+          <div class="agent-name">Jordan</div>
+          <div class="agent-role">Steady — Bella+calm</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('morgan')">
+      <div class="agent-header">
+        <div class="agent-avatar sarah">M4</div>
+        <div class="agent-info">
+          <div class="agent-name">Morgan</div>
+          <div class="agent-role">Neighborly — Bella+friendly</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="agent-section">
+  <div class="squad-header">
+    <div class="squad-icon" style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2)">💧</div>
+    <div class="squad-name" style="color:#a855f7">MIKE SQUAD (Plumbing)</div>
+    <div class="squad-count">97 leads assigned</div>
+  </div>
+  <div class="agent-grid">
+    <div class="agent-card" onclick="showAgentDetails('mike')">
+      <div class="agent-header">
+        <div class="agent-avatar mike">M1</div>
+        <div class="agent-info">
+          <div class="agent-name">Mike</div>
+          <div class="agent-role">Veteran — Josh gravelly</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('danny')">
+      <div class="agent-header">
+        <div class="agent-avatar mike">D2</div>
+        <div class="agent-info">
+          <div class="agent-name">Danny</div>
+          <div class="agent-role">Hustler — Josh+upbeat</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('frank')">
+      <div class="agent-header">
+        <div class="agent-avatar mike">F3</div>
+        <div class="agent-info">
+          <div class="agent-name">Frank</div>
+          <div class="agent-role">No-Nonsense — Josh+serious</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('terry')">
+      <div class="agent-header">
+        <div class="agent-avatar mike">T4</div>
+        <div class="agent-info">
+          <div class="agent-name">Terry</div>
+          <div class="agent-role">Helpful — Josh+friendly</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="agent-section">
+  <div class="squad-header">
+    <div class="squad-icon" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2)">⚡</div>
+    <div class="squad-name" style="color:#f59e0b">EMMA SQUAD (Electrical)</div>
+    <div class="squad-count">88 leads assigned</div>
+  </div>
+  <div class="agent-grid">
+    <div class="agent-card" onclick="showAgentDetails('emma')">
+      <div class="agent-header">
+        <div class="agent-avatar emma">E1</div>
+        <div class="agent-info">
+          <div class="agent-name">Emma</div>
+          <div class="agent-role">Polished Expert — Bella+pro</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('chloe')">
+      <div class="agent-header">
+        <div class="agent-avatar emma">C2</div>
+        <div class="agent-info">
+          <div class="agent-name">Chloe</div>
+          <div class="agent-role">Trustworthy — Bella+warm</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('alex')">
+      <div class="agent-header">
+        <div class="agent-avatar emma">A3</div>
+        <div class="agent-info">
+          <div class="agent-name">Alex</div>
+          <div class="agent-role">Direct — Josh+even</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('sam')">
+      <div class="agent-header">
+        <div class="agent-avatar emma">S4</div>
+        <div class="agent-info">
+          <div class="agent-name">Sam</div>
+          <div class="agent-role">Easy-Going — Bella+casual</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="agent-section">
+  <div class="squad-header">
+    <div class="squad-icon" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2)">🏗️</div>
+    <div class="squad-name" style="color:#22c55e">DAVID SQUAD (General)</div>
+    <div class="squad-count">179 leads assigned</div>
+  </div>
+  <div class="agent-grid">
+    <div class="agent-card" onclick="showAgentDetails('david')">
+      <div class="agent-header">
+        <div class="agent-avatar david">D1</div>
+        <div class="agent-info">
+          <div class="agent-name">David</div>
+          <div class="agent-role">Veteran Leader — Josh+authority</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('chris')">
+      <div class="agent-header">
+        <div class="agent-avatar david">C2</div>
+        <div class="agent-info">
+          <div class="agent-name">Chris</div>
+          <div class="agent-role">Relatable — Josh+young</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('pat')">
+      <div class="agent-header">
+        <div class="agent-avatar david">P3</div>
+        <div class="agent-info">
+          <div class="agent-name">Pat</div>
+          <div class="agent-role">Gender-Neutral — Bella+neutral</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+    <div class="agent-card" onclick="showAgentDetails('taylor')">
+      <div class="agent-header">
+        <div class="agent-avatar david">T4</div>
+        <div class="agent-info">
+          <div class="agent-name">Taylor</div>
+          <div class="agent-role">Strategic Advisor — Josh+warm</div>
+        </div>
+        <div class="agent-status"><div class="status-indicator standby"></div>Standby</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0</div><div class="agent-stat-label">Demos</div></div>
+        <div class="agent-stat"><div class="agent-stat-value">0%</div><div class="agent-stat-label">Conv</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="section-title">🚀 TOMORROW'S LAUNCH — APRIL 26, 2026</div>
-
-<div class="two-col">
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon orange">🌅</div>
-<div>
-<div class="card-label">MORNING PHASE (8 AM - 12 PM)</div>
-<div style="font-size:13px;color:#64748b">Wake up → Launch → First contact</div>
-</div>
-</div>
-</div>
-<div style="space-y:12px">
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">08:00</div>
-<div><div style="font-weight:600;color:#fff">YOU WAKE UP</div><div style="font-size:12px;color:#64748b">Check JARVIS on phone. All systems green.</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">08:30</div>
-<div><div style="font-weight:600;color:#fff">ACTIVATE VAPI</div><div style="font-size:12px;color:#64748b">Log into vapi.ai → Upload 16 agent configs → Start calling</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">09:00</div>
-<div><div style="font-weight:600;color:#fff">SMS BLAST #1</div><div style="font-size:12px;color:#64748b">n8n sends 187 personalized SMS to HVAC leads</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">10:00</div>
-<div><div style="font-weight:600;color:#fff">EMAIL WAVE #1</div><div style="font-size:12px;color:#64748b">100 personalized emails to leads with websites</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">11:00</div>
-<div><div style="font-weight:600;color:#fff">FIRST CALLS LIVE</div><div style="font-size:12px;color:#64748b">Sarah Squad starts calling HVAC businesses</div></div>
-</div>
-</div>
-</div>
-
-<div class="card">
-<div class="card-header">
-<div class="card-title">
-<div class="card-icon pink">🌙</div>
-<div>
-<div class="card-label">AFTERNOON PHASE (12 PM - 6 PM)</div>
-<div style="font-size:13px;color:#64748b">Responses → Demos → Closes</div>
-</div>
-</div>
-</div>
-<div style="space-y:12px">
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">12:00</div>
-<div><div style="font-weight:600;color:#fff">SMS REPLIES IN</div><div style="font-size:12px;color:#64748b">n8n auto-replies to interested leads with demo link</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">14:00</div>
-<div><div style="font-weight:600;color:#fff">DEMO #1</div><div style="font-size:12px;color:#64748b">First prospect books demo through website/email</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">15:00</div>
-<div><div style="font-weight:600;color:#fff">FOLLOW-UP SMS</div><div style="font-size:12px;color:#64748b">n8n sends Sequence 2 to non-responders</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">17:00</div>
-<div><div style="font-weight:600;color:#fff">DAILY REPORT</div><div style="font-size:12px;color:#64748b">JARVIS sends you summary: calls, SMS, replies, demos</div></div>
-</div>
-<div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)">
-<div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#00f0ff;flex-shrink:0;width:60px">18:00</div>
-<div><div style="font-weight:600;color:#fff">YOU CHECK IN</div><div style="font-size:12px;color:#64748b">5 min review → Adjust if needed → Rest</div></div>
-</div>
-</div>
-</div>
+<div class="timeline">
+  <div class="timeline-card">
+    <div class="timeline-header">
+      <div class="card-icon orange">🌅</div>
+      <div class="card-label">MORNING PHASE (8 AM - 12 PM)</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">08:00</div>
+      <div class="timeline-content"><h4>YOU WAKE UP</h4><p>Check JARVIS on phone. All systems green.</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">08:30</div>
+      <div class="timeline-content"><h4>ACTIVATE VAPI</h4><p>Log into vapi.ai → Upload 16 configs → Start calling</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">09:00</div>
+      <div class="timeline-content"><h4>SMS BLAST #1</h4><p>n8n sends 187 personalized SMS to HVAC leads</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">10:00</div>
+      <div class="timeline-content"><h4>EMAIL WAVE #1</h4><p>100 personalized emails to leads with websites</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">11:00</div>
+      <div class="timeline-content"><h4>FIRST CALLS LIVE</h4><p>Sarah Squad starts calling HVAC businesses</p></div>
+    </div>
+  </div>
+  <div class="timeline-card">
+    <div class="timeline-header">
+      <div class="card-icon pink">🌙</div>
+      <div class="card-label">AFTERNOON PHASE (12 PM - 6 PM)</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">12:00</div>
+      <div class="timeline-content"><h4>SMS REPLIES IN</h4><p>n8n auto-replies to interested leads with demo link</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">14:00</div>
+      <div class="timeline-content"><h4>DEMO #1</h4><p>First prospect books demo through website/email</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">15:00</div>
+      <div class="timeline-content"><h4>FOLLOW-UP SMS</h4><p>n8n sends Sequence 2 to non-responders</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">17:00</div>
+      <div class="timeline-content"><h4>DAILY REPORT</h4><p>JARVIS sends you summary: calls, SMS, replies, demos</p></div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-time">18:00</div>
+      <div class="timeline-content"><h4>YOU CHECK IN</h4><p>5 min review → Adjust if needed → Rest</p></div>
+    </div>
+  </div>
 </div>
 
-<!-- FOOTER -->
-<div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:32px">
-<div style="font-family:'Orbitron',sans-serif;font-size:14px;color:#64748b;letter-spacing:3px">AG AUTOMATION — CALGARY'S AI WORKFORCE</div>
-<div style="font-size:12px;color:#475569;margin-top:8px">16 Agents • 562 Leads • 1 Mission: $50K in 14 Days</div>
-<div style="font-size:12px;color:#475569;margin-top:4px">JARVIS Dashboard v2.0 • Single-File Build • Works Everywhere</div>
+<div class="footer">
+  <div class="footer-title">AG AUTOMATION — CALGARY'S AI WORKFORCE</div>
+  <div class="footer-sub">19 Agents • 562 Leads • 1 Mission: $50K in 14 Days</div>
+  <div class="footer-sub">JARVIS v3.0 • Iron Man Interface • Click any card for details • 🔊 button to hear JARVIS speak</div>
 </div>
 
-</div><!-- end container -->
+</div>
 
 <script>
-// Live clock
+// ===== STARFIELD =====
+const starsContainer=document.getElementById('stars');
+for(let i=0;i<100;i++){
+  const star=document.createElement('div');
+  star.className='star';
+  star.style.left=Math.random()*100+'%';
+  star.style.top=Math.random()*100+'%';
+  star.style.animationDelay=Math.random()*3+'s';
+  star.style.width=Math.random()*3+1+'px';
+  star.style.height=star.style.width;
+  starsContainer.appendChild(star);
+}
+
+// ===== LIVE CLOCK =====
 function updateClock(){
   const now=new Date();
-  const time=now.toLocaleTimeString('en-US',{hour12:false});
-  document.getElementById('clock').textContent=time;
+  const time=now.toLocaleTimeString('en-US',{hour12:false,timeZone:'America/Edmonton'});
+  document.getElementById('clock').textContent=time+' MST';
 }
 updateClock();
 setInterval(updateClock,1000);
 
-// Simulate live activity
-const feed=document.querySelector('.activity-feed');
-if(feed){
-  const events=[
-    {dot:'green',text:'<b style="color:#22c55e">CALL</b> Sarah connected with Action Furnace — demo booked!',time:'Just now'},
-    {dot:'cyan',text:'<b style="color:#00f0ff">SMS</b> Sent to 47 HVAC leads — 3 replies already!',time:'2 min ago'},
-    {dot:'purple',text:'<b style="color:#a855f7">EMAIL</b> Opened by Knight Plumbing — clicked link!',time:'5 min ago'},
-  ];
+// ===== CIRCULAR PROGRESS ANIMATION =====
+setTimeout(()=>{
+  document.querySelectorAll('.circle-ring-fill').forEach((ring,i)=>{
+    const offsets=[339.292,50,0,0];
+    ring.style.strokeDashoffset=offsets[i];
+  });
+},500);
+
+// ===== TEXT TO SPEECH =====
+let speaking=false;
+const speakBtn=document.getElementById('speakBtn');
+const jarvisWelcome="Welcome back, MJ. JARVIS systems are online. You have 19 agents ready for deployment. The Board of Directors is standing by. All 562 leads are mapped. We are ready to launch at your command.";
+
+function toggleSpeak(){
+  if(speaking){
+    window.speechSynthesis.cancel();
+    speaking=false;
+    speakBtn.classList.remove('active');
+    speakBtn.textContent='🔊';
+  }else{
+    const utterance=new SpeechSynthesisUtterance(jarvisWelcome);
+    utterance.rate=0.9;
+    utterance.pitch=0.8;
+    utterance.volume=1;
+    const voices=window.speechSynthesis.getVoices();
+    const maleVoice=voices.find(v=>v.name.includes('Male')||v.name.includes('David')||v.name.includes('Daniel'));
+    if(maleVoice)utterance.voice=maleVoice;
+    utterance.onend=()=>{
+      speaking=false;
+      speakBtn.classList.remove('active');
+      speakBtn.textContent='🔊';
+    };
+    window.speechSynthesis.speak(utterance);
+    speaking=true;
+    speakBtn.classList.add('active');
+    speakBtn.textContent='🔇';
+  }
 }
+
+// ===== MODAL =====
+function showAgentDetails(type){
+  const modal=document.getElementById('modal');
+  const body=document.getElementById('modal-body');
+  const details={
+    'closer':{title:'🎯 THE CLOSER',content:'<h2 style="color:#00f0ff;font-family:Orbitron;margin-bottom:16px">Sales Commander</h2><p><b>Role:</b> Final decision maker on all deals</p><p><b>Tasks:</b> Reviews demos, sends proposals, negotiates pricing, closes sales</p><p><b>Target:</b> 1 close per day minimum</p><p><b>Current:</b> 0 deals closed</p>'},
+    'organizer':{title:'📊 THE ORGANIZER',content:'<h2 style="color:#a855f7;font-family:Orbitron;margin-bottom:16px">Operations Commander</h2><p><b>Role:</b> Manages all 16 worker agents</p><p><b>Tasks:</b> Schedules shifts, assigns leads, monitors performance, reassigns underperformers</p><p><b>Current:</b> 562 leads assigned across 4 squads</p>'},
+    'bloodhound':{title:'🔍 THE BLOODHOUND',content:'<h2 style="color:#f59e0b;font-family:Orbitron;margin-bottom:16px">Intel Commander</h2><p><b>Role:</b> Lead generation and enrichment</p><p><b>Tasks:</b> Scrapes 50+ new leads daily, enriches phone/email/website data</p><p><b>Current:</b> 562 Calgary trade businesses mapped</p>'},
+    'sarah':{title:'🔥 SARAH — HVAC Squad Leader',content:'<h2 style="color:#00f0ff;font-family:Orbitron;margin-bottom:16px">Sarah (Agent S1)</h2><p><b>Voice:</b> Bella (Warm, professional)</p><p><b>Personality:</b> Empathetic, never pushy, builds trust</p><p><b>Opening:</b> "Hi, this is Sarah from AG Automation. I noticed your excellent reviews..."</p><p><b>Leads:</b> 25 HVAC businesses</p><p><b>Status:</b> Standby</p>'},
+    'mike':{title:'💧 MIKE — Plumbing Squad Leader',content:'<h2 style="color:#a855f7;font-family:Orbitron;margin-bottom:16px">Mike (Agent M1)</h2><p><b>Voice:</b> Josh (Gravelly, old-school)</p><p><b>Personality:</b> 20-year veteran plumber vibe</p><p><b>Opening:</b> "Mike here. Been in plumbing 20 years. I was looking at your business..."</p><p><b>Leads:</b> 24 Plumbing businesses</p><p><b>Status:</b> Standby</p>'},
+    'revenue':{title:'💰 REVENUE TRACKER',content:'<h2 style="color:#00f0ff;font-family:Orbitron;margin-bottom:16px">Live Revenue</h2><p><b>Goal:</b> $50,000 in 14 days</p><p><b>Current:</b> $0.00</p><p><b>Progress:</b> 0%</p><p><b>To hit goal:</b> Need ~$3,571/day</p><p><b>Path:</b> 10 small ($1,200) + 10 medium ($2,200) + 5 complex ($4,500) = $56,500</p>'},
+    'voice':{title:'📞 VOICE ARMY STATUS',content:'<h2 style="color:#a855f7;font-family:Orbitron;margin-bottom:16px">16 AI Cold Callers</h2><p><b>Status:</b> All 16 in standby mode</p><p><b>On Call:</b> 0</p><p><b>Idle:</b> 16</p><p><b>Offline:</b> 0</p><p><b>Platform:</b> Vapi.ai + ElevenLabs</p><p><b>Next step:</b> Upload configs to Vapi.ai dashboard</p>'},
+    'sms':{title:'💬 SMS CAMPAIGN',content:'<h2 style="color:#00f0ff;font-family:Orbitron;margin-bottom:16px">Text Message Outreach</h2><p><b>Status:</b> Pending launch</p><p><b>Sent:</b> 0</p><p><b>Delivered:</b> 0</p><p><b>Replies:</b> 0</p><p><b>Platform:</b> Twilio + n8n</p><p><b>Next step:</b> Activate n8n workflow</p>'},
+    'email':{title:'📧 EMAIL CAMPAIGN',content:'<h2 style="color:#ff2d95;font-family:Orbitron;margin-bottom:16px">Email Sequences</h2><p><b>Status:</b> Pending launch</p><p><b>Templates:</b> 25 personalized (5 per industry)</p><p><b>Platform:</b> SendGrid + n8n</p><p><b>Next step:</b> Import leads and activate</p>'},
+    'leads':{title:'🔍 LEAD DATABASE',content:'<h2 style="color:#22c55e;font-family:Orbitron;margin-bottom:16px">562 Calgary Trade Businesses</h2><p><b>HVAC:</b> 100</p><p><b>Plumbing:</b> 97</p><p><b>Electrical:</b> 88</p><p><b>Roofing:</b> 98</p><p><b>General:</b> 179</p><p><b>All have:</b> Phone, address, website, ratings, reviews</p>'},
+    'system':{title:'🏥 SYSTEM HEALTH',content:'<h2 style="color:#22c55e;font-family:Orbitron;margin-bottom:16px">7/7 Services Online</h2><p>✅ Next.js API — 45ms</p><p>✅ n8n Workflows — 120ms</p><p>✅ Vapi Voice AI — 200ms</p><p>✅ Twilio SMS — 150ms</p><p>✅ SendGrid Email — 180ms</p><p>✅ OpenAI GPT-4 — 350ms</p><p>✅ Lead Database — 80ms</p>'},
+    'activity':{title:'📡 ACTIVITY FEED',content:'<h2 style="color:#eab308;font-family:Orbitron;margin-bottom:16px">Live System Events</h2><p>All events are tracked in real-time</p><p>Click any card to see more details</p><p>JARVIS updates automatically</p>'}
+  };
+  const d=details[type]||{title:'AGENT DETAILS',content:'<p>Click on any agent card to see their full profile.</p>'};
+  body.innerHTML='<h1 style="font-family:Orbitron;font-size:28px;margin-bottom:20px">'+d.title+'</h1>'+d.content;
+  modal.classList.add('active');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('active');
+}
+
+document.getElementById('modal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
 </script>
+
 </body>
 </html>
