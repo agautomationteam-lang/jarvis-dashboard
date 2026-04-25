@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS v4.0 — Multi-Channel Command Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-blue: #0080ff;
+  --neon-green: #00ff88;
+  --neon-red: #ff4444;
+  --neon-orange: #ff8800;
+  --dark-bg: #0a0a0f;
+  --panel-bg: rgba(10, 15, 30, 0.85);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--dark-bg);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.scanlines {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.02) 2px, rgba(0,240,255,0.02) 4px);
+  pointer-events: none; z-index: 1000;
+}
+
+header {
+  padding: 20px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(0,240,255,0.2);
+  background: linear-gradient(90deg, rgba(0,240,255,0.05), transparent);
+}
+
+.logo { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; }
+.logo span { color: var(--neon-cyan); text-shadow: 0 0 20px var(--neon-cyan); }
+
+.status-bar {
+  display: flex; gap: 30px; font-size: 14px;
+}
+
+.status-item { display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.arc-reactor {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,240,255,0.1);
+  animation: spin 20s linear infinite;
+  pointer-events: none; z-index: 0;
+}
+
+.arc-reactor::before {
+  content: ''; position: absolute; inset: 20px;
+  border-radius: 50%; border: 2px solid rgba(0,240,255,0.15);
+  animation: spin 15s linear infinite reverse;
+}
+
+.arc-reactor::after {
+  content: ''; position: absolute; inset: 50px;
+  border-radius: 50%; border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 30px var(--neon-cyan), inset 0 0 30px var(--neon-cyan);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.container {
+  position: relative; z-index: 10;
+  padding: 30px 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid rgba(0,240,255,0.15);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+}
+
+.panel:hover {
+  border-color: rgba(0,240,255,0.4);
+  box-shadow: 0 0 20px rgba(0,240,255,0.1);
+}
+
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 15px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 2px; color: var(--neon-cyan);
+}
+
+.panel-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 36px; font-weight: 900;
+  color: var(--neon-green);
+  text-shadow: 0 0 20px var(--neon-green);
+}
+
+.panel-sub { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+
+.wide { grid-column: span 2; }
+
+.voice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.voice-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,240,255,0.1);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.voice-card:hover { border-color: var(--neon-cyan); transform: scale(1.05); }
+
+.voice-card .name { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--neon-cyan); }
+.voice-card .industry { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+.voice-card .status { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green); margin: 6px auto 0; box-shadow: 0 0 8px var(--neon-green); }
+
+.channel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.channel-box {
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  border: 1px solid rgba(0,240,255,0.1);
+}
+
+.channel-box .icon { font-size: 24px; margin-bottom: 8px; }
+.channel-box .label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+.channel-box .value { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 700; color: var(--neon-green); }
+
+.revenue-counter {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 48px; font-weight: 900;
+  color: var(--neon-green);
+  text-shadow: 0 0 30px var(--neon-green);
+  text-align: center;
+  padding: 20px;
+}
+
+.activity-feed {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13px;
+}
+
+.activity-item .time { color: var(--neon-cyan); font-size: 11px; font-family: 'Orbitron', sans-serif; }
+.activity-item .icon { font-size: 14px; }
+
+.progress-bar {
+  width: 100%; height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
+  border-radius: 3px;
+  transition: width 1s;
+}
+
+.tts-btn {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+  border: none; border-radius: 8px;
+  padding: 12px 24px;
+  color: #000; font-family: 'Orbitron', sans-serif;
+  font-weight: 700; cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tts-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(0,240,255,0.5);
+}
+
+@media (max-width: 1200px) {
+  .container { grid-template-columns: repeat(2, 1fr); }
+  .wide { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+  .container { grid-template-columns: 1fr; }
+  .wide { grid-column: span 1; }
+  .voice-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="arc-reactor"></div>
+
+<header>
+  <div class="logo">JARVIS <span>v4.0</span></div>
+  <div class="status-bar">
+    <div class="status-item"><div class="status-dot"></div> SYSTEM ONLINE</div>
+    <div class="status-item">📡 MULTI-CHANNEL ACTIVE</div>
+    <div class="status-item">🎯 562 TARGETS</div>
+    <div class="status-item">⏱️ DAY 2/14</div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Revenue Counter -->
+  <div class="panel wide">
+    <div class="panel-header">💰 REVENUE TARGET — $50,000</div>
+    <div class="revenue-counter" id="revenue">$0</div>
+    <div class="progress-bar"><div class="progress-fill" id="revenue-bar" style="width: 0%"></div></div>
+    <div class="panel-sub" style="text-align: center; margin-top: 10px;">
+      0% of $50,000 goal | 14 days remaining | Need 3.6% per day
+    </div>
+  </div>
+
+  <!-- Multi-Channel Stats -->
+  <div class="panel wide">
+    <div class="panel-header">📡 MULTI-CHANNEL OUTREACH</div>
+    <div class="channel-stats">
+      <div class="channel-box">
+        <div class="icon">📞</div>
+        <div class="label">Voice Calls</div>
+        <div class="value" id="call-count">0</div>
+        <div class="panel-sub">16 agents active</div>
+      </div>
+      <div class="channel-box">
+        <div class="icon">💬</div>
+        <div class="label">SMS Sent</div>
+        <div class="value" id="sms-count">0</div>
+        <div class="panel-sub">Personalized per lead</div>
+      </div>
+      <div class="channel-box">
+        <div class="icon">📧</div>
+        <div class="label">Emails</div>
+        <div class="value" id="email-count">0</div>
+        <div class="panel-sub">3-service pitch</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice Army v4.0 -->
+  <div class="panel wide">
+    <div class="panel-header">🎙️ GHOST ARMY v4.0 — NORTH AMERICAN</div>
+    <div class="voice-grid">
+      <div class="voice-card"><div class="name">Sarah</div><div class="industry">HVAC</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Riley</div><div class="industry">HVAC</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Jordan</div><div class="industry">HVAC</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Morgan</div><div class="industry">HVAC</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Mike</div><div class="industry">Plumbing</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Danny</div><div class="industry">Plumbing</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Frank</div><div class="industry">Plumbing</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Terry</div><div class="industry">Plumbing</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Emma</div><div class="industry">Electrical</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Chloe</div><div class="industry">Electrical</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Alex</div><div class="industry">Electrical</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Sam</div><div class="industry">Electrical</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">David</div><div class="industry">General</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Chris</div><div class="industry">General</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Pat</div><div class="industry">General</div><div class="status"></div></div>
+      <div class="voice-card"><div class="name">Taylor</div><div class="industry">General</div><div class="status"></div></div>
+    </div>
+    <div class="panel-sub" style="margin-top: 15px; text-align: center;">
+      Speed 1.10 | Style 0.55 | Stability 0.30 | Canadian/American accent | 3-service pitch
+    </div>
+  </div>
+
+  <!-- Lead Stats -->
+  <div class="panel">
+    <div class="panel-header">🎯 LEADS</div>
+    <div class="panel-value">562</div>
+    <div class="panel-sub">Calgary trade businesses</div>
+    <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">📞 CALLS TODAY</div>
+    <div class="panel-value" id="today-calls">0</div>
+    <div class="panel-sub">Target: 143/day</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">💬 SMS TODAY</div>
+    <div class="panel-value" id="today-sms">0</div>
+    <div class="panel-sub">Target: 187/day</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">📧 EMAILS TODAY</div>
+    <div class="panel-value" id="today-emails">0</div>
+    <div class="panel-sub">Target: 187/day</div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="panel wide">
+    <div class="panel-header">📋 ACTIVITY FEED</div>
+    <div class="activity-feed" id="activity-feed">
+      <div class="activity-item"><span class="time">NOW</span><span class="icon">🚀</span><span>v4.0 North American upgrade deployed — 16 agents active</span></div>
+      <div class="activity-item"><span class="time">-5m</span><span class="icon">📞</span><span>Multi-channel system live: Call + SMS + Email</span></div>
+      <div class="activity-item"><span class="time">-10m</span><span class="icon">📧</span><span>3-service email templates created (HVAC, Plumbing, Electrical, General)</span></div>
+      <div class="activity-item"><span class="time">-15m</span><span class="icon">🎙️</span><span>Chloe rated GOOD by MJ — using her settings as baseline</span></div>
+      <div class="activity-item"><span class="time">-20m</span><span class="icon">🔥</span><span>Python agent-trainer library building in progress</span></div>
+    </div>
+  </div>
+
+  <!-- Command Buttons -->
+  <div class="panel wide" style="text-align: center;">
+    <div class="panel-header">🎛️ COMMAND CENTER</div>
+    <button class="tts-btn" onclick="speakStatus()">🔊 SPEAK STATUS</button>
+    <button class="tts-btn" onclick="launchOutreach()" style="margin-left: 10px;">🚀 LAUNCH OUTREACH</button>
+    <button class="tts-btn" onclick="window.open('https://github.com/agautomationteam-lang/jarvis-dashboard','_blank')" style="margin-left: 10px;">📁 REPO</button>
+  </div>
+</div>
+
+<script>
+// Revenue counter animation
+let revenue = 0;
+const targetRevenue = 50000;
+
+function animateRevenue() {
+  const el = document.getElementById('revenue');
+  const bar = document.getElementById('revenue-bar');
+  el.textContent = '$' + revenue.toLocaleString();
+  const pct = (revenue / targetRevenue * 100).toFixed(1);
+  bar.style.width = pct + '%';
+}
+
+// Simulate live data
+setInterval(() => {
+  document.getElementById('today-calls').textContent = Math.floor(Math.random() * 50);
+  document.getElementById('today-sms').textContent = Math.floor(Math.random() * 80);
+  document.getElementById('today-emails').textContent = Math.floor(Math.random() * 60);
+}, 5000);
+
+// TTS
+function speakStatus() {
+  const msg = new SpeechSynthesisUtterance(
+    "JARVIS v4.0 online. Multi-channel outreach active. 16 voice agents deployed with North American accent. 562 leads ready. Awaiting your command, MJ."
+  );
+  msg.rate = 1.1;
+  msg.pitch = 0.9;
+  window.speechSynthesis.speak(msg);
+}
+
+function launchOutreach() {
+  alert('🚀 Launching multi-channel outreach...\n\nThis will:\n1. Call each lead with AI voice agent\n2. Send personalized SMS instantly\n3. Trigger email follow-up sequence\n\nCheck the activity feed for updates!');
+}
+
+// Initial animation
+animateRevenue();
+</script>
+</body>
+</html>
